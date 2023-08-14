@@ -1,0 +1,4 @@
+Designator,Val,Package,Mid X,Mid Y,Rotation,Layer
+C1,0.1u,C_0603_1608Metric,141.8,-119.775,90.0,top
+J1,Conn_01x08,PinHeader_1x08_P2.54mm_Horizontal,120.54,-117.0,270.0,top
+U1,MB-RL7021-11,MB-RL7021-11,138.0,-117.0,0.0,top

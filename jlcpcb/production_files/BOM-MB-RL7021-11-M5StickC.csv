@@ -1,0 +1,8 @@
+Comment,Designator,Footprint,LCSC
+0.1u,C1,C_0603_1608Metric,C14663
+Conn_01x08,J1,PinHeader_1x08_P2.54mm_Horizontal,C225494
+MB-RL7021-11,U1,MB-RL7021-11,C2917815
+MountingHole,H2,MountingHole_2.2mm_M2,
+MountingHole,H4,MountingHole_2.2mm_M2,
+MountingHole,H1,MountingHole_2.2mm_M2,
+MountingHole,H3,MountingHole_2.2mm_M2,
