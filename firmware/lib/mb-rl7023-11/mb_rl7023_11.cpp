@@ -255,7 +255,7 @@ int mb_rl2023_11::get_instantaneous_power(){
     sendto_command(echonetLiteFrame, sizeof(echonetLiteFrame));
 
     int timeout = 0;
-    while(timeout < (3000000)){
+    while(timeout < (1000000)){
         while(serial.available()){
 
             String line = serial.readStringUntil('\n');
@@ -283,7 +283,7 @@ int mb_rl2023_11::get_instantaneous_power(){
 
     DEBUG_PRINTLN("COMMAND FAILED");
     
-    return 0;
+    return -1;
 }
 
 int mb_rl2023_11::get_running_status(){

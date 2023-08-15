@@ -13,7 +13,9 @@ AsyncWebServer server(80);
 
 void setup() {
   // put your setup code here, to run once:
-  // M5.begin();
+  M5.begin();
+  M5.Lcd.setRotation(3);
+
   Serial.begin(115200);
 
   WiFi.begin(ssid, password);
@@ -39,9 +41,9 @@ void setup() {
   server.on("/metrics", HTTP_GET, [&](AsyncWebServerRequest *request){
     String response;
 
-    response += "# HELP environ_temp Environment temperature (in C).\n";
-    response += "# TYPE environ_temp gauge\n";
-    response += ("environ_temp{location=\"tsukuba\"}" + String(instantaneous_power) + "\n");
+    response += "# HELP instantaneous_power instantantaneous power (in W).\n";
+    response += "# TYPE instantaneous_power gauge\n";
+    response += ("instantaneous_power{location=\"tsukuba\"}" + String(instantaneous_power) + "\n");
   
     request->send(200, "text", response);
 
@@ -49,7 +51,7 @@ void setup() {
 
   server.on("/", HTTP_GET, [&](AsyncWebServerRequest *request){
 
-    request->send(200, "text", "POKEMON");
+    request->send(200, "text", "please access /metrics");
   });
 
   server.begin();
@@ -58,6 +60,20 @@ void setup() {
 String header;
 
 void loop() {
-  instantaneous_power = power.get_instantaneous_power();
-  Serial.println(instantaneous_power);
+  int pw = power.get_instantaneous_power();
+  if(pw != -1){
+    instantaneous_power = pw;
+    Serial.println(instantaneous_power);
+
+    // write LCD
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setTextDatum(3);
+    M5.Lcd.setCursor(0, 40, 7);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.setTextSize(1);
+    M5.Lcd.printf("%d", instantaneous_power);
+    M5.Lcd.setCursor(M5.Lcd.getCursorX(), M5.Lcd.getCursorY() - 5, 2);
+    M5.Lcd.setTextSize(4);
+    M5.Lcd.printf("W");
+  }
 }
