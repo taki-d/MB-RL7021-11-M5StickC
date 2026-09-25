@@ -1,42 +1,78 @@
-#ifndef _MB_RL2023_11
-#define _MB_RL2023_11
+#ifndef MB_RL7023_11_H
+#define MB_RL7023_11_H
 
 #include <Arduino.h>
-#include <array>
 
 #include "debug.h"
 
+// Non-blocking driver for the ROHM RL7023-11 Wi-SUN module.
+//
+// Call begin() once, then call loop() from the application loop as often as
+// possible. None of the public methods waits for UART input.
 class mb_rl2023_11 {
 public:
     mb_rl2023_11(
         uint8_t channel, uint8_t tx_pin, uint8_t rx_pin,
-        String bid, String bpass    
+        String bid, String bpass
     );
-    bool setup();
-    void clean_buf();
 
-    bool write_command(String comand);
-    bool sendto_command(char* data, int len);
+    void begin();
+    void loop();
 
-    bool analyze_response();
-    bool analyze_scan_response();
-    bool analyze_converted_ipv6_addr();
-    bool analyze_connection_status();
+    bool request_instantaneous_power();
+    bool take_instantaneous_power(int &value);
 
-    int get_running_status();
-    int get_instantaneous_power();
-    int split(String data, char delimiter, String *dst);
+    bool is_ready() const;
+    bool is_busy() const;
+    const char *status() const;
 
 private:
+    enum class State : uint8_t {
+        Idle,
+        WaitReset,
+        WaitInfo,
+        WaitPassword,
+        WaitBid,
+        WaitScan,
+        WaitChannel,
+        WaitPanId,
+        WaitIpv6,
+        WaitJoin,
+        Ready,
+        WaitPower,
+        RetryWait,
+    };
+
     HardwareSerial serial;
 
-    String bid = "";
-    String bpass = "";  
-    String channel = "";
-    String pan_id = "";
-    String addr = "NG";  
-    String ipv6_addr = "";
-};
+    String bid_;
+    String bpass_;
+    String channel_;
+    String pan_id_;
+    String addr_;
+    String ipv6_addr_;
+    String rx_line_;
 
+    State state_ = State::Idle;
+    uint32_t deadline_ = 0;
+    uint32_t retry_at_ = 0;
+    uint8_t scan_duration_ = 4;
+
+    bool new_power_ = false;
+    int instantaneous_power_ = 0;
+    const char *status_ = "idle";
+
+    void clear_input();
+    void send_command(const String &command, State wait_state, uint32_t timeout_ms);
+    void start_scan();
+    void start_setup_retry(const char *reason);
+    void handle_line(String line);
+    void handle_command_ok(State wait_state);
+    void handle_scan_line(const String &line);
+    void handle_power_line(const String &line);
+    void send_power_request();
+
+    static bool reached(uint32_t now, uint32_t target);
+};
 
 #endif
