@@ -1,5 +1,8 @@
 # MB-RL7021-11-M5StickC
 
+Firmware backup and build troubleshooting notes are in
+[`docs/firmware-dump-and-build-notes.md`](docs/firmware-dump-and-build-notes.md).
+
 ## Firmware configuration
 
 Create `firmware/src/credentials.h` (it is intentionally ignored by Git) and
