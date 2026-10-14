@@ -1,4 +1,14 @@
 #include <M5StickCPlus.h>
+
+// M5StickCPlus' bundled eSPI header defines min/max macros. They collide with
+// std::chrono::duration::min/max included by ESPAsyncWebServer.
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 

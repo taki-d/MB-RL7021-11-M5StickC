@@ -1,0 +1,11 @@
+{
+    "C_Cpp.default.compileCommands": [
+        "${workspaceFolder}/firmware/compile_commands.json"
+    ],
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/firmware/include",
+        "${workspaceFolder}/firmware/src",
+        "${workspaceFolder}/firmware/lib/**",
+        "${workspaceFolder}/firmware/.pio/libdeps/m5stick-c/**"
+    ]
+}
