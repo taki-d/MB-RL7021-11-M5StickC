@@ -18,9 +18,27 @@ server remains responsive while scanning, joining, or retrying the module.
 
 Endpoints:
 
-- `/metrics` — Prometheus-compatible instantaneous power metric
-- `/healthz` — `200` only when Wi-Fi and the RL7023 are ready
+- `/metrics` — Prometheus-compatible power, current, and cumulative-energy metrics
+- `/healthz` — `200` when Wi-Fi and the meter session are connected, including response waits
 - `/` — short status summary
+
+Enable or disable each metric and adjust its polling interval in
+`firmware/src/metrics_config.h` and rebuild. Power has a 1-second minimum
+request interval; measured sequential responses arrive about every 2–2.4 seconds
+on the tested meter. Current is disabled by default to prioritize power updates;
+set `kEnableInstantaneousCurrent = true` to restore its requests and metrics.
+Cumulative-energy requests remain enabled every 30 minutes and take turns on
+the same transport, temporarily extending that period. If current is enabled,
+E7+E8 are requested together every 30 seconds (typically about 4.4 seconds on
+this meter). Occasional reply delays caused 7–8.5-second sample gaps in earlier
+testing; these intervals are not hard upper bounds. Slow energy requests are
+interleaved with power instead of queued in a batch. `kCombinePowerAndCurrent`
+can disable the combined request; a rejection or timeout automatically falls
+back to separate requests for that boot.
+
+`kEnablePowerTimingMetrics` exposes received-sample age, the latest sample gap,
+and a sample counter alongside power. Timing traces and a repeatable measurement
+script are documented in [the latency investigation](docs/polling-latency-2026-10-07.md).
 
 ## VS Code IntelliSense
 
