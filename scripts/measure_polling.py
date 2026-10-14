@@ -59,6 +59,8 @@ with serial.Serial(args.port, 115200, timeout=0.2) as device:
         elif re.fullmatch(r"\d{1,7}", text):
             samples.append((at, int(text)))
             print(json.dumps({"event": "sample", "at": round(at, 3), "watts": int(text)}), flush=True)
+        elif re.fullmatch(r"DISPLAY ready heap=\d+", text) or text == "DISPLAY framebuffer unavailable":
+            print(json.dumps({"event": "display", "at": round(at, 3), "value": text}), flush=True)
         elif text.startswith(("current R/T", "cumulative energy")):
             print(json.dumps({"event": "slow_sample", "at": round(at, 3), "value": text}), flush=True)
 

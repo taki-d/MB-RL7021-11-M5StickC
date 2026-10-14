@@ -40,6 +40,18 @@ back to separate requests for that boot.
 and a sample counter alongside power. Timing traces and a repeatable measurement
 script are documented in [the latency investigation](docs/polling-latency-2026-10-07.md).
 
+## On-device display
+
+The landscape 240×135 display shows large, width-adjusted watts, Wi-Fi status,
+and a time-based two-minute power trend. `RX` is the age of the last received
+sample; `DT` is the interval between the last two samples. `DELAY` (5 seconds)
+and `STALE` (10 seconds) distinguish an old reading from a live one. Connection
+progress is shown before the first sample; an unknown value is never shown as zero.
+
+The framebuffer is reused and only changed 16-row strips are transferred, one
+per loop iteration, so drawing does not block UART servicing for a full frame.
+See [display details and tests](docs/display-improvements-2026-10-07.md).
+
 ## VS Code IntelliSense
 
 Open `MB-RL7021-11-M5StickC.code-workspace` with the PlatformIO IDE and

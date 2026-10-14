@@ -15,6 +15,7 @@
 #include "mb_rl7023_11.h"
 #include "credentials.h"
 #include "metrics_config.h"
+#include "meter_display.h"
 
 namespace {
 constexpr uint32_t kWifiLogIntervalMs = 10000;
@@ -22,6 +23,7 @@ constexpr uint32_t kWifiLogIntervalMs = 10000;
 
 mb_rl2023_11 power(1, 0, 26, bid, bpass);
 AsyncWebServer server(80);
+MeterDisplay meter_display(&M5.Lcd);
 
 volatile int instantaneous_power = 0;
 volatile bool instantaneous_power_valid = false;
@@ -54,16 +56,18 @@ String energy_kwh(uint32_t raw) {
     return String(static_cast<float>(raw) * power.energy_unit_kwh(), 3);
 }
 
-void update_display() {
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.setTextDatum(3);
-    M5.Lcd.setCursor(0, 40, 7);
-    M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.setTextSize(1);
-    M5.Lcd.printf("%d", instantaneous_power);
-    M5.Lcd.setCursor(M5.Lcd.getCursorX(), M5.Lcd.getCursorY() - 5, 2);
-    M5.Lcd.setTextSize(4);
-    M5.Lcd.printf("W");
+void update_display(uint32_t now, bool wifi_connected) {
+    MeterDisplayState state;
+    state.enabled = metrics_config::kEnableInstantaneousPower;
+    state.valid = instantaneous_power_valid;
+    state.watts = instantaneous_power;
+    state.sample_at = power_sample_at;
+    state.sample_gap_ms = power_sample_gap_ms;
+    state.sample_count = power_sample_count;
+    state.wifi_connected = wifi_connected;
+    state.meter_connected = power.is_connected();
+    state.meter_status = power.status();
+    meter_display.update(now, state);
 }
 
 void setup_http_server() {
@@ -197,11 +201,17 @@ void setup() {
     M5.Lcd.setRotation(3);
     Serial.begin(115200);
 
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setCursor(0, 0);
-    M5.Lcd.println("Starting...");
+    if (!meter_display.begin()) {
+        // A display allocation failure must not stop metering or networking.
+        M5.Lcd.fillScreen(BLACK);
+        M5.Lcd.setTextColor(WHITE);
+        M5.Lcd.setTextSize(1);
+        M5.Lcd.setCursor(4, 4);
+        M5.Lcd.println("Display unavailable");
+        Serial.println("DISPLAY framebuffer unavailable");
+    } else {
+        Serial.printf("DISPLAY ready heap=%u\n", ESP.getFreeHeap());
+    }
 
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
@@ -308,7 +318,7 @@ void loop() {
         instantaneous_power = measured_power;
         instantaneous_power_valid = true;
         Serial.println(measured_power);
-        update_display();
+        meter_display.add_sample(measured_power, received_at);
     }
 
     int measured_current_r = 0;
@@ -349,6 +359,7 @@ void loop() {
     }
 
     schedule_meter_request(millis());
+    update_display(millis(), wifi_connected);
 
     // Give the Wi-Fi task time to run without introducing a protocol wait.
     delay(1);
