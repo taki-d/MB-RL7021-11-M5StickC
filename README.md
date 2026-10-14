@@ -55,6 +55,39 @@ The framebuffer is reused and only changed 16-row strips are transferred, one
 per loop iteration, so drawing does not block UART servicing for a full frame.
 See [display details and tests](docs/display-improvements-2026-10-07.md).
 
+## Tests and continuous integration
+
+[Firmware CI](https://github.com/taki-d/MB-RL7021-11-M5StickC/actions/workflows/ci.yml)
+runs on pushes, pull requests, and manual dispatch:
+
+- Protocol parser, transaction/fallback tests, and Python capture-window tests.
+- An ESP32 firmware build with public dummy credentials, followed by display
+  layout, history, rollover, and allocation-failure tests.
+- Both C++ suites run with AddressSanitizer and UndefinedBehaviorSanitizer.
+  Synthetic display previews are retained as PPM artifacts for seven days.
+
+No device, real credentials, or GitHub Secrets are needed. CI never uploads to
+hardware and never publishes firmware binaries or flash dumps. It does not
+replace the physical meter latency and LCD checks documented above.
+
+To run the same tests locally:
+
+```sh
+bash scripts/run_host_tests.sh core
+# Install the M5 font dependency once before running the display tests:
+pio pkg install -d firmware -e m5stick-c
+bash scripts/run_host_tests.sh display
+# Or run both suites:
+bash scripts/run_host_tests.sh
+```
+
+The script supports `CXX`, `PYTHON`, and `TEST_BUILD_DIR` overrides. Output goes
+to the ignored `.pio/host-tests` directory by default. Keep your local
+`firmware/src/credentials.h`; the CI dummy header is only for clean CI runners.
+PlatformIO Core is pinned in `tests/ci/requirements.txt`; tested platform and
+library versions are pinned in `firmware/platformio.ini`. Official actions are
+pinned to release commit SHAs.
+
 ## VS Code IntelliSense
 
 Open `MB-RL7021-11-M5StickC.code-workspace` with the PlatformIO IDE and

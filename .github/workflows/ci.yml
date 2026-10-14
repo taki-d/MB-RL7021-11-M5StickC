@@ -1,0 +1,78 @@
+name: Firmware CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-tests:
+    name: Protocol and capture tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      CXX: g++
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Run protocol and Python tests
+        env:
+          TEST_BUILD_DIR: ${{ runner.temp }}/host-tests
+        run: bash scripts/run_host_tests.sh core
+
+  firmware-and-display:
+    name: ESP32 build and display tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CXX: g++
+      PLATFORMIO_SETTING_ENABLE_TELEMETRY: 'no'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: tests/ci/requirements.txt
+      - name: Cache PlatformIO dependencies only
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: ${{ runner.os }}-platformio-${{ hashFiles('firmware/platformio.ini', 'tests/ci/requirements.txt') }}
+      - name: Install PlatformIO
+        run: python -m pip install -r tests/ci/requirements.txt
+      - name: Prepare dummy credentials (never overwrite real ones)
+        run: |
+          test ! -e firmware/src/credentials.h
+          install -m 600 tests/ci/credentials.h firmware/src/credentials.h
+      - name: Compile ESP32 firmware (no upload)
+        run: pio run -d firmware -e m5stick-c
+      - name: Test display layout with sanitizers
+        env:
+          TEST_BUILD_DIR: ${{ runner.temp }}/host-tests
+        run: bash scripts/run_host_tests.sh display
+      - name: Save synthetic display previews
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: display-previews
+          path: ${{ runner.temp }}/host-tests/display/*.ppm
+          if-no-files-found: warn
+          retention-days: 7
+          # Never upload firmware binaries, local credentials, or flash dumps.
